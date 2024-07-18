@@ -3,6 +3,13 @@ local Players = game:GetService("Players")
 local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Список доступных команд
+local commands = {
+    ["/goto"] = "Телепортирует к игроку с указанным ником.",
+    ["/size"] = "Изменяет размер игрока. Пример: /size 5",
+    ["/help"] = "Показывает список доступных команд."
+}
+
 -- Создаем или получаем модуль чата
 local function createChatModule()
     local playerScripts = StarterPlayer:FindFirstChildOfClass("PlayerScripts")
@@ -48,6 +55,12 @@ local function createChatCommandsFolder()
     return chatCommandsFolder
 end
 
+-- Функция для отправки сообщения в чат
+local function sendChatMessage(player, message)
+    local chatService = require(game:GetService("Chat"))
+    chatService:Chat(player.Character.HumanoidRootPart, message, Enum.ChatColor.Blue)
+end
+
 -- Обработчик команд чата
 local function onChatMessage(message, sender)
     local commandPrefix = "/"
@@ -55,9 +68,10 @@ local function onChatMessage(message, sender)
     if message:sub(1, #commandPrefix) == commandPrefix then
         local command, args = message:match("^/([%w_]+)%s*(.*)")
         if command then
-            command = command:lower()
+            command = "/" .. command:lower() -- Префикс "/" для команд
+
             -- Обрабатываем команды
-            if command == "goto" then
+            if command == "/goto" then
                 local targetName = args:match("^%s*(.-)%s*$")
                 if targetName and targetName ~= "" then
                     local targetPlayer = Players:FindFirstChild(targetName)
@@ -69,24 +83,30 @@ local function onChatMessage(message, sender)
                             warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
                         end
                     else
-                        localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
+                        sendChatMessage(sender, "Игрок с таким никнеймом не найден.")
                     end
                 end
-            elseif command == "size" then
+            elseif command == "/size" then
                 local size = tonumber(args)
                 if size and size > 0 then
                     local localPlayer = Players.LocalPlayer
                     if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+                        -- Измените это свойство на подходящее для вашего использования
                         localPlayer.Character.Humanoid.BodySize = size
                     else
                         warn("Ошибка: Humanoid не найден в персонаже локального игрока.")
                     end
                 else
-                    localPlayer:SendNotification({Title = "Ошибка", Text = "Некорректный размер."})
+                    sendChatMessage(sender, "Некорректный размер.")
                 end
+            elseif command == "/help" then
+                local helpMessage = "Доступные команды:\n"
+                for cmd, desc in pairs(commands) do
+                    helpMessage = helpMessage .. cmd .. " - " .. desc .. "\n"
+                end
+                sendChatMessage(sender, helpMessage)
             else
-                -- Неизвестная команда
-                localPlayer:SendNotification({Title = "Ошибка", Text = "Неизвестная команда."})
+                sendChatMessage(sender, "Неизвестная команда.")
             end
         end
     end
