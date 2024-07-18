@@ -1,10 +1,10 @@
--- Функция для загрузки модуля с командами HD Admin
+-- Скрипт для загрузки и настройки HD Admin
 local function loadHDAdmin()
-    -- Проверяем, существует ли HD Admin в ReplicatedStorage
+    -- Проверяем, существует ли модуль HD Admin в ReplicatedStorage
     local hdAdminModule = game.ReplicatedStorage:FindFirstChild("HDAdmin")
     if not hdAdminModule then
-        -- Если нет, загружаем модуль HD Admin из его исходного местоположения
-        local sourceUrl = "https://www.robloxlibrary.com/path/to/HDAdminModule" -- Замените на реальный URL или путь
+        -- Если модуль HD Admin не найден, загружаем его из внешнего источника
+        local sourceUrl = "https://www.robloxlibrary.com/path/to/HDAdminModule" -- Замените на реальный URL
         local httpService = game:GetService("HttpService")
         
         local success, response = pcall(function()
@@ -34,3 +34,16 @@ end
 
 -- Вызов функции для загрузки HD Admin
 loadHDAdmin()
+
+-- Убедитесь, что все игроки могут использовать команды
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+    -- Отправляем игроку информацию о командах
+    local function sendMessageToPlayer(player, message)
+        local ChatService = game:GetService("Chat")
+        ChatService:Chat(player.Character.Head, message, Enum.ChatColor.Blue)
+    end
+
+    sendMessageToPlayer(player, "Добро пожаловать! Все команды HD Admin доступны для использования.")
+end)
