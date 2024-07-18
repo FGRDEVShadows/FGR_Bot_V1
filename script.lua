@@ -26,3 +26,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot
 wait(1)
 
 loadstring(game:HttpGet(""))()
+
+wait(1)
+
+loadstring(game:HttpGet(""))()
