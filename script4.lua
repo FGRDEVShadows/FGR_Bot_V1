@@ -1,6 +1,13 @@
 -- Получаем игрока
 local player = game.Players.LocalPlayer
 
+-- Список доступных команд
+local commands = {
+    ["f.goto"] = "Телепортирует к игроку с указанным ником.",
+    ["f.size"] = "Изменяет размер игрока. Пример: f.size 5",
+    ["f.help"] = "Показывает список доступных команд."
+}
+
 -- Функция для отправки сообщения
 local function SendMessage(message)
     -- Проверяем, что игрок существует и что сообщение не пустое
@@ -45,44 +52,9 @@ local function SendMessage(message)
     end
 end
 
--- Список доступных команд
-local commands = {
-    ["f.goto"] = "Телепортирует к игроку с указанным ником.",
-    ["f.size"] = "Изменяет размер игрока. Пример: f.size 5",
-    ["f.help"] = "Показывает список доступных команд."
-}
-
 -- Функция для обработки команд
-local function ProcessCommand(command, args)
-    if command == "f.goto" then
-        local targetName = args:match("^%s*(.-)%s*$")
-        if targetName and targetName ~= "" then
-            local targetPlayer = game.Players:FindFirstChild(targetName)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    player.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
-                    SendMessage("Телепортирован к игроку: " .. targetName)
-                else
-                    print("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
-                end
-            else
-                SendMessage("Игрок с таким ником не найден.")
-            end
-        end
-    elseif command == "f.size" then
-        local size = tonumber(args)
-        if size and size > 0 then
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                -- Применяем изменение размера, если доступно
-                player.Character.Humanoid.BodySize = size
-                SendMessage("Размер игрока установлен на: " .. size)
-            else
-                print("Ошибка: Humanoid не найден в персонаже локального игрока.")
-            end
-        else
-            SendMessage("Некорректный размер.")
-        end
-    elseif command == "f.help" then
+local function ProcessCommand(command)
+    if command == "f.help" then
         local helpMessage = "Доступные команды:\n"
         for cmd, desc in pairs(commands) do
             helpMessage = helpMessage .. cmd .. " - " .. desc .. "\n"
@@ -98,11 +70,8 @@ local function onChatMessage(message)
     local commandPrefix = "f."
     -- Проверяем, начинается ли сообщение с командного префикса
     if message:sub(1, #commandPrefix) == commandPrefix then
-        local command, args = message:match("^f%.([%w_]+)%s*(.*)")
-        if command then
-            command = "f." .. command:lower() -- Префикс "f." для команд
-            ProcessCommand(command, args)
-        end
+        local command = message:sub(#commandPrefix + 1):lower()
+        ProcessCommand(command)
     end
 end
 
