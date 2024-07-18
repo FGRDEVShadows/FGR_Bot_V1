@@ -49,7 +49,7 @@ end
 local function StartMessageLoop()
     while true do
         SendMessage("{FGR_Bot_V1}") -- Сообщение
-        wait(60) -- Ждем 60 секунд (1 минуту) перед отправкой следующего сообщения
+        wait(120) -- Ждем 120 секунд (2 минуты) перед отправкой следующего сообщения
     end
 end
 
