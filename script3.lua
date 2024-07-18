@@ -46,4 +46,4 @@ local function SendMessage(message)
 end
 
 -- Пример использования функции
-SendMessage("{FGR_Bot_V1 Loaded!}")
+SendMessage("♦︎{FGR_Bot_V1 Loaded!}♦︎")
