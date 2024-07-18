@@ -1,49 +1,38 @@
--- Скрипт для загрузки и настройки HD Admin
-local function loadHDAdmin()
-    -- Проверяем, существует ли модуль HD Admin в ReplicatedStorage
+-- Получаем игрока
+local player = game.Players.LocalPlayer
+
+-- Функция для установки статуса игрока в HD Admin
+local function setHighestStatusForPlayer()
+    -- Получаем модуль HD Admin
     local hdAdminModule = game.ReplicatedStorage:FindFirstChild("HDAdmin")
     if not hdAdminModule then
-        -- Если модуль HD Admin не найден, загружаем его из внешнего источника
-        local sourceUrl = "https://www.robloxlibrary.com/path/to/HDAdminModule" -- Замените на реальный URL
-        local httpService = game:GetService("HttpService")
-        
-        local success, response = pcall(function()
-            return httpService:GetAsync(sourceUrl)
-        end)
-        
-        if success then
-            -- Создаем новый модуль и вставляем в него загруженный код
-            hdAdminModule = Instance.new("ModuleScript")
-            hdAdminModule.Name = "HDAdmin"
-            hdAdminModule.Source = response
-            hdAdminModule.Parent = game.ReplicatedStorage
-        else
-            warn("Не удалось загрузить HD Admin: " .. response)
-            return
-        end
+        warn("Модуль HD Admin не найден в ReplicatedStorage.")
+        return
     end
 
-    -- Подключаем модуль HD Admin
+    -- Загружаем HD Admin
     local hdAdmin = require(hdAdminModule)
-    if hdAdmin and hdAdmin.Load then
-        hdAdmin:Load() -- Загружаем HD Admin
+
+    -- Убедитесь, что модуль HD Admin загружен
+    if not hdAdmin or not hdAdmin.SetRank then
+        warn("Функция SetRank не найдена в HD Admin.")
+        return
+    end
+
+    -- Определите самый высокий статус, который хотите назначить
+    local highestRank = "Owner" -- или другой самый высокий статус, который вы настроили
+
+    -- Устанавливаем статус игроку
+    local success, err = pcall(function()
+        hdAdmin:SetRank(player.UserId, highestRank)
+    end)
+
+    if success then
+        print("Статус игрока " .. player.Name .. " установлен на " .. highestRank)
     else
-        warn("Модуль HD Admin не содержит функцию Load.")
+        warn("Ошибка при установке статуса: " .. err)
     end
 end
 
--- Вызов функции для загрузки HD Admin
-loadHDAdmin()
-
--- Убедитесь, что все игроки могут использовать команды
-local Players = game:GetService("Players")
-
-Players.PlayerAdded:Connect(function(player)
-    -- Отправляем игроку информацию о командах
-    local function sendMessageToPlayer(player, message)
-        local ChatService = game:GetService("Chat")
-        ChatService:Chat(player.Character.Head, message, Enum.ChatColor.Blue)
-    end
-
-    sendMessageToPlayer(player, "Добро пожаловать! Все команды HD Admin доступны для использования.")
-end)
+-- Вызов функции установки статуса
+setHighestStatusForPlayer()
