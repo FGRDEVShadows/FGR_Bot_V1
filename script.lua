@@ -1,5 +1,24 @@
+-- Убедитесь, что этот скрипт выполняется на стороне клиента (LocalScript) или на сервере, если нужно
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+-- Функция для обработки команд
+local function onChatMessage(message)
+    -- Проверка на команду и формат
+    local command, ownerName = message:match("^f%.owner%s+(.+)$")
+    if command then
+        _G.Config.BotOwnerName = ownerName
+        print("BotOwnerName изменен на: " .. ownerName)
+    end
+end
+
+-- Подключение обработчика сообщений чата
+game.Players.LocalPlayer.Chatted:Connect(onChatMessage)
+
+-- Инициализация конфигурации
 _G.Config = {
-    BotOwnerName = game.Players.LocalPlayer.Name,
+    BotOwnerName = LocalPlayer.Name,
     BotOwnerId = 0, -- Замените на реальный ID, если необходимо
     FPSCap = 20,
     Prefix = "f",
@@ -12,6 +31,7 @@ _G.Config = {
     IsRagdollGame = true,
     GiveToolsMethod = 1,
 }
+
 
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/Script2.lua"))()
