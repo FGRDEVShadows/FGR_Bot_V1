@@ -45,6 +45,13 @@ local function SendMessage(message)
     end
 end
 
+-- Список доступных команд
+local commands = {
+    ["f.goto"] = "Телепортирует к игроку с указанным ником.",
+    ["f.size"] = "Изменяет размер игрока. Пример: f.size 5",
+    ["f.help"] = "Показывает список доступных команд."
+}
+
 -- Функция для обработки команд
 local function ProcessCommand(command, args)
     if command == "f.goto" then
@@ -77,9 +84,9 @@ local function ProcessCommand(command, args)
         end
     elseif command == "f.help" then
         local helpMessage = "Доступные команды:\n"
-        helpMessage = helpMessage .. "f.goto <ник> - Телепортирует к игроку с указанным ником.\n"
-        helpMessage = helpMessage .. "f.size <размер> - Изменяет размер игрока. Пример: f.size 5\n"
-        helpMessage = helpMessage .. "f.help - Показывает список доступных команд."
+        for cmd, desc in pairs(commands) do
+            helpMessage = helpMessage .. cmd .. " - " .. desc .. "\n"
+        end
         SendMessage(helpMessage)
     else
         SendMessage("Неизвестная команда.")
