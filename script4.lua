@@ -1,29 +1,112 @@
--- Ссылка на сервисы
-local Players = game:GetService("Players")
-local StarterPlayer = game:GetService("StarterPlayer")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- Получаем игрока
+local player = game.Players.LocalPlayer
 
--- Список доступных команд
-local commands = {
-    ["f.goto"] = "Телепортирует к игроку с указанным ником.",
-    ["f.size"] = "Изменяет размер игрока. Пример: f.size 5",
-    ["f.help"] = "Показывает список доступных команд."
-}
+-- Функция для отправки сообщения
+local function SendMessage(message)
+    -- Проверяем, что игрок существует и что сообщение не пустое
+    if player and message then
+        -- Создаем объект DefaultChatSystemChatEvents, если он не существует
+        local ChatEvents = game.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if not ChatEvents then
+            ChatEvents = Instance.new("Folder")
+            ChatEvents.Name = "DefaultChatSystemChatEvents"
+            ChatEvents.Parent = game.ReplicatedStorage
+            
+            -- Создаем событие SayMessageRequest
+            local SayMessageRequest = Instance.new("RemoteEvent")
+            SayMessageRequest.Name = "SayMessageRequest"
+            SayMessageRequest.Parent = ChatEvents
+        else
+            -- Проверяем существование события SayMessageRequest в объекте ChatEvents
+            local SayMessageRequest = ChatEvents:FindFirstChild("SayMessageRequest")
+            if not SayMessageRequest then
+                SayMessageRequest = Instance.new("RemoteEvent")
+                SayMessageRequest.Name = "SayMessageRequest"
+                SayMessageRequest.Parent = ChatEvents
+            end
+        end
 
--- Создаем или получаем модуль чата
-local function createChatModule()
-    local playerScripts = StarterPlayer:FindFirstChildOfClass("PlayerScripts")
-    if not playerScripts then
-        playerScripts = Instance.new("Folder")
-        playerScripts.Name = "PlayerScripts"
-        playerScripts.Parent = StarterPlayer
+        -- Отправляем сообщение в чат от имени игрока
+        local SayMessageRequest = ChatEvents:FindFirstChild("SayMessageRequest")
+        if SayMessageRequest then
+            local success, err = pcall(function()
+                SayMessageRequest:FireServer(message, "All")
+            end)
+            if success then
+                print("Сообщение отправлено успешно: " .. message)
+            else
+                print("Ошибка при отправке сообщения:", err)
+            end
+        else
+            print("Ошибка: событие SayMessageRequest не найдено.")
+        end
+    else
+        print("Ошибка: игрок не найден или сообщение пустое.")
     end
-    
-    local chatModule = playerScripts:FindFirstChild("ChatModule")
+end
+
+-- Функция для обработки команд
+local function ProcessCommand(command, args)
+    if command == "f.goto" then
+        local targetName = args:match("^%s*(.-)%s*$")
+        if targetName and targetName ~= "" then
+            local targetPlayer = game.Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                    SendMessage("Телепортирован к игроку: " .. targetName)
+                else
+                    print("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
+                end
+            else
+                SendMessage("Игрок с таким ником не найден.")
+            end
+        end
+    elseif command == "f.size" then
+        local size = tonumber(args)
+        if size and size > 0 then
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                -- Применяем изменение размера, если доступно
+                player.Character.Humanoid.BodySize = size
+                SendMessage("Размер игрока установлен на: " .. size)
+            else
+                print("Ошибка: Humanoid не найден в персонаже локального игрока.")
+            end
+        else
+            SendMessage("Некорректный размер.")
+        end
+    elseif command == "f.help" then
+        local helpMessage = "Доступные команды:\n"
+        helpMessage = helpMessage .. "f.goto <ник> - Телепортирует к игроку с указанным ником.\n"
+        helpMessage = helpMessage .. "f.size <размер> - Изменяет размер игрока. Пример: f.size 5\n"
+        helpMessage = helpMessage .. "f.help - Показывает список доступных команд."
+        SendMessage(helpMessage)
+    else
+        SendMessage("Неизвестная команда.")
+    end
+end
+
+-- Обработчик сообщений чата
+local function onChatMessage(message)
+    local commandPrefix = "f."
+    -- Проверяем, начинается ли сообщение с командного префикса
+    if message:sub(1, #commandPrefix) == commandPrefix then
+        local command, args = message:match("^f%.([%w_]+)%s*(.*)")
+        if command then
+            command = "f." .. command:lower() -- Префикс "f." для команд
+            ProcessCommand(command, args)
+        end
+    end
+end
+
+-- Настройка обработчика сообщений чата
+local function setupChatModule()
+    -- Создаем или получаем модуль чата
+    local chatModule = game.ReplicatedStorage:FindFirstChild("ChatModule")
     if not chatModule then
         chatModule = Instance.new("ModuleScript")
         chatModule.Name = "ChatModule"
-        chatModule.Parent = playerScripts
+        chatModule.Parent = game.ReplicatedStorage
 
         -- Вставляем код в модуль чата
         chatModule.Source = [[
@@ -41,91 +124,13 @@ local function createChatModule()
         ]]
     end
 
-    return chatModule
-end
-
--- Создаем объект для хранения команд в ReplicatedStorage
-local function createChatCommandsFolder()
-    local chatCommandsFolder = ReplicatedStorage:FindFirstChild("ChatCommands")
-    if not chatCommandsFolder then
-        chatCommandsFolder = Instance.new("Folder")
-        chatCommandsFolder.Name = "ChatCommands"
-        chatCommandsFolder.Parent = ReplicatedStorage
-    end
-    return chatCommandsFolder
-end
-
--- Функция для отправки сообщения в чат
-local function sendChatMessage(player, message)
-    local chatService = require(game:GetService("Chat"))
-    chatService:Chat(player.Character.HumanoidRootPart, message, Enum.ChatColor.Blue)
-end
-
--- Обработчик команд чата
-local function onChatMessage(message, sender)
-    local commandPrefix = "f."
-    -- Проверяем, начинается ли сообщение с командного префикса
-    if message:sub(1, #commandPrefix) == commandPrefix then
-        local command, args = message:match("^f%.([%w_]+)%s*(.*)")
-        if command then
-            command = "f." .. command:lower() -- Префикс "f." для команд
-
-            -- Обрабатываем команды
-            if command == "f.goto" then
-                local targetName = args:match("^%s*(.-)%s*$")
-                if targetName and targetName ~= "" then
-                    local targetPlayer = Players:FindFirstChild(targetName)
-                    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local localPlayer = Players.LocalPlayer
-                        if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
-                        else
-                            warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
-                        end
-                    else
-                        sendChatMessage(sender, "Игрок с таким никнеймом не найден.")
-                    end
-                end
-            elseif command == "f.size" then
-                local size = tonumber(args)
-                if size and size > 0 then
-                    local localPlayer = Players.LocalPlayer
-                    if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-                        -- Измените это свойство на подходящее для вашего использования
-                        localPlayer.Character.Humanoid.BodySize = size
-                    else
-                        warn("Ошибка: Humanoid не найден в персонаже локального игрока.")
-                    end
-                else
-                    sendChatMessage(sender, "Некорректный размер.")
-                end
-            elseif command == "f.help" then
-                local helpMessage = "Доступные команды:\n"
-                for cmd, desc in pairs(commands) do
-                    helpMessage = helpMessage .. cmd .. " - " .. desc .. "\n"
-                end
-                sendChatMessage(sender, helpMessage)
-            else
-                sendChatMessage(sender, "Неизвестная команда.")
-            end
-        end
-    end
-end
-
--- Настройка обработчика команд чата
-local function setupChatModule()
-    -- Создаем или получаем модуль чата
-    local chatModule = createChatModule()
     local chatService = require(chatModule)
-
-    -- Подключаемся к обработчику сообщений чата
     chatService:ConnectChat(onChatMessage)
 end
 
 -- Основная функция для настройки
 local function initialize()
-    -- Создаем необходимые объекты
-    createChatCommandsFolder()
+    -- Настраиваем обработчик чата
     setupChatModule()
 end
 
