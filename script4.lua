@@ -1,5 +1,47 @@
 -- Ссылка на сервисы
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
+
+-- Проверяем наличие и создаем объект для хранения команд
+local ChatCommands = ReplicatedStorage:FindFirstChild("ChatCommands")
+if not ChatCommands then
+    ChatCommands = Instance.new("Folder")
+    ChatCommands.Name = "ChatCommands"
+    ChatCommands.Parent = ReplicatedStorage
+end
+
+-- Создаем модуль чата, если его нет
+local function createChatModule()
+    local playerScripts = StarterPlayer:FindFirstChildOfClass("PlayerScripts")
+    if not playerScripts then
+        playerScripts = Instance.new("Folder")
+        playerScripts.Name = "PlayerScripts"
+        playerScripts.Parent = StarterPlayer
+    end
+    
+    local chatModule = playerScripts:FindFirstChild("ChatModule")
+    if not chatModule then
+        chatModule = Instance.new("ModuleScript")
+        chatModule.Name = "ChatModule"
+        chatModule.Parent = playerScripts
+
+        -- Вставляем код в модуль чата
+        chatModule.Source = [[
+            local ChatService = require(game:GetService("Chat"))
+
+            local module = {}
+
+            function module:ConnectChat(callback)
+                ChatService.OnMessageReceived:Connect(callback)
+            end
+
+            return module
+        ]]
+    end
+
+    return chatModule
+end
 
 -- Обработчик команды /goto
 local function onChatMessage(message)
@@ -34,19 +76,12 @@ local function setupChatHandler()
         return
     end
 
-    if not localPlayer:FindFirstChildOfClass("PlayerScripts") then
-        warn("Ошибка: PlayerScripts не найден.")
-        return
-    end
+    -- Создаем или получаем модуль чата
+    local chatModule = createChatModule()
 
-    -- Получаем модуль чата
-    local chatModule = require(localPlayer:FindFirstChildOfClass("PlayerScripts"):WaitForChild("ChatModule"))
-
-    if chatModule and chatModule.OnChatMessage then
-        chatModule.OnChatMessage:Connect(onChatMessage)
-    else
-        warn("Ошибка: ChatModule не найден или не содержит OnChatMessage.")
-    end
+    -- Подключаемся к обработчику чата
+    local chatService = require(chatModule)
+    chatService:ConnectChat(onChatMessage)
 end
 
 -- Выполняем настройку
