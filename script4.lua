@@ -12,7 +12,7 @@ end
 
 -- Обработчик команды f.goto
 local function onChatMessage(message)
-    local prefix = "f.goto"
+    local prefix = "/goto"
     if message:sub(1, #prefix) == prefix then
         local targetName = message:sub(#prefix + 2):match("^%s*(.-)%s*$") -- Получаем никнейм из команды
         if targetName and targetName ~= "" then
