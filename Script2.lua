@@ -12,6 +12,7 @@ frame.Size = UDim2.new(1, 0, 1, 36) -- Размеры равны размера�
 frame.Position = UDim2.new(0, 0, 0, -36) -- Позиция в левом верхнем углу с отрицательным отступом
 frame.BackgroundColor3 = Color3.fromRGB(13, 13, 13) -- Цвет фона RGB
 frame.BorderSizePixel = 0 -- Убираем границу
+frame.BackgroundTransperency = 0.1
 frame.Parent = gui
 
 -- Функция для создания теневого эффекта под TextLabel
