@@ -1,35 +1,26 @@
 -- Ссылка на сервисы
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Проверяем наличие и создаем объект для хранения команд
-local ChatCommands = ReplicatedStorage:FindFirstChild("ChatCommands")
-if not ChatCommands then
-    ChatCommands = Instance.new("Folder")
-    ChatCommands.Name = "ChatCommands"
-    ChatCommands.Parent = ReplicatedStorage
-end
-
--- Обработчик команды f.goto
+-- Обработчик команды /goto
 local function onChatMessage(message)
     local prefix = "/goto"
-    if message:sub(1, #prefix) == prefix then
-        local targetName = message:sub(#prefix + 2):match("^%s*(.-)%s*$") -- Получаем никнейм из команды
-        if targetName and targetName ~= "" then
-            -- Найти целевого игрока по никнейму
-            local targetPlayer = Players:FindFirstChild(targetName)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local localPlayer = Players.LocalPlayer
-                if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Телепортировать локального игрока к целевому игроку
-                    localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
-                else
-                    warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
-                end
+    -- Проверка, содержит ли сообщение команду /goto
+    local commandStart, targetName = message:find("^%s*"..prefix.." %s*(.+)%s*$")
+    
+    if targetName then
+        -- Найти целевого игрока по никнейму
+        local targetPlayer = Players:FindFirstChild(targetName)
+        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local localPlayer = Players.LocalPlayer
+            if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                -- Телепортировать локального игрока к целевому игроку
+                localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
             else
-                -- Показать сообщение об ошибке в чате
-                localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
+                warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
             end
+        else
+            -- Показать сообщение об ошибке в чате
+            localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
         end
     end
 end
@@ -48,6 +39,7 @@ local function setupChatHandler()
         return
     end
 
+    -- Получаем модуль чата
     local chatModule = require(localPlayer:FindFirstChildOfClass("PlayerScripts"):WaitForChild("ChatModule"))
 
     if chatModule and chatModule.OnChatMessage then
