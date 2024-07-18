@@ -1,27 +1,29 @@
--- Убедитесь, что этот скрипт выполняется на стороне клиента (LocalScript) или на сервере, если нужно
+-- Убедитесь, что этот скрипт выполняется на стороне клиента (LocalScript)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
 
 -- Функция для обработки команд
-local function onChatMessage(message)
-    -- Проверка на команду и формат
-    local command, ownerName = message:match("^f%.owner%s+(.+)$")
-    if command then
-        _G.Config.BotOwnerName = ownerName
-        print("BotOwnerName изменен на: " .. ownerName)
+local function onChatMessage(message, speaker)
+    -- Проверка, что сообщение отправлено локальным игроком
+    if speaker == LocalPlayer then
+        -- Проверка на команду и формат
+        local command, ownerName = message:match("^f%.owner%s+(.+)$")
+        if command then
+            _G.Config.BotOwnerName = ownerName
+            print("BotOwnerName изменен на: " .. ownerName)
+        end
     end
 end
 
 -- Подключение обработчика сообщений чата
-game.Players.LocalPlayer.Chatted:Connect(onChatMessage)
+LocalPlayer.Chatted:Connect(onChatMessage)
 
 -- Инициализация конфигурации
 _G.Config = {
     BotOwnerName = LocalPlayer.Name,
     BotOwnerId = 0, -- Замените на реальный ID, если необходимо
     FPSCap = 20,
-    Prefix = "f",
+    Prefix = "f",  -- Изменен префикс на "f"
     WhiteListPermLevel = 2,
     WhiteList = {"Пример1", "Пример2", "Пример3"},
     HideCoords = Vector3.new(math.random(1, 1000), 100000, math.random(1, 1000)),
