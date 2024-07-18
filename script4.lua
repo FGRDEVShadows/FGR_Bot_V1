@@ -1,23 +1,14 @@
 -- Ссылка на сервисы
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterPlayer = game:GetService("StarterPlayer")
+local ChatService = require(game:GetService("Chat"))
 
--- Проверяем наличие и создаем объект для хранения команд
-local ChatCommands = ReplicatedStorage:FindFirstChild("ChatCommands")
-if not ChatCommands then
-    ChatCommands = Instance.new("Folder")
-    ChatCommands.Name = "ChatCommands"
-    ChatCommands.Parent = ReplicatedStorage
-end
-
--- Создаем модуль чата, если его нет
+-- Проверка и создание модуля для хранения команд
 local function createChatModule()
-    local playerScripts = StarterPlayer:FindFirstChildOfClass("PlayerScripts")
+    local playerScripts = game:GetService("StarterPlayer"):FindFirstChildOfClass("PlayerScripts")
     if not playerScripts then
         playerScripts = Instance.new("Folder")
         playerScripts.Name = "PlayerScripts"
-        playerScripts.Parent = StarterPlayer
+        playerScripts.Parent = game:GetService("StarterPlayer")
     end
     
     local chatModule = playerScripts:FindFirstChild("ChatModule")
@@ -28,12 +19,14 @@ local function createChatModule()
 
         -- Вставляем код в модуль чата
         chatModule.Source = [[
-            local ChatService = require(game:GetService("Chat"))
-
             local module = {}
 
+            -- Объявляем событие для получения сообщений чата
+            local chatEvent = Instance.new("BindableEvent")
+            module.OnChatMessage = chatEvent.Event
+
             function module:ConnectChat(callback)
-                ChatService.OnMessageReceived:Connect(callback)
+                chatEvent.Event:Connect(callback)
             end
 
             return module
@@ -43,31 +36,32 @@ local function createChatModule()
     return chatModule
 end
 
--- Обработчик команды /goto
+-- Обработчик команд чата
 local function onChatMessage(message)
     local prefix = "/goto"
-    -- Проверка, содержит ли сообщение команду /goto
-    local commandStart, targetName = message:find("^%s*"..prefix.." %s*(.+)%s*$")
-    
-    if targetName then
-        -- Найти целевого игрока по никнейму
-        local targetPlayer = Players:FindFirstChild(targetName)
-        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local localPlayer = Players.LocalPlayer
-            if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                -- Телепортировать локального игрока к целевому игроку
-                localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+    -- Проверяем, содержит ли сообщение команду /goto
+    if message:sub(1, #prefix) == prefix then
+        local targetName = message:sub(#prefix + 2):match("^%s*(.-)%s*$") -- Получаем никнейм из команды
+        if targetName and targetName ~= "" then
+            -- Найти целевого игрока по никнейму
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local localPlayer = Players.LocalPlayer
+                if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    -- Телепортировать локального игрока к целевому игроку
+                    localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                else
+                    warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
+                end
             else
-                warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
+                -- Показать сообщение об ошибке в чате
+                localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
             end
-        else
-            -- Показать сообщение об ошибке в чате
-            localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
         end
     end
 end
 
--- Подключаем обработчик к событию чата
+-- Настройка обработчика чата
 local function setupChatHandler()
     local localPlayer = Players.LocalPlayer
 
@@ -82,6 +76,13 @@ local function setupChatHandler()
     -- Подключаемся к обработчику чата
     local chatService = require(chatModule)
     chatService:ConnectChat(onChatMessage)
+
+    -- Подключаемся к событию получения сообщений чата
+    ChatService.OnMessageReceived:Connect(function(message, sender)
+        if sender == localPlayer then
+            onChatMessage(message)
+        end
+    end)
 end
 
 -- Выполняем настройку
