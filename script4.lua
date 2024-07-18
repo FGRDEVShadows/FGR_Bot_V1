@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+-- Функция для обработки сообщений чата
 local function onChatMessage(message)
     local prefix = "f.goto"
     if message:sub(1, #prefix) == prefix then
@@ -15,11 +16,11 @@ local function onChatMessage(message)
                 end
             else
                 -- Показать сообщение об ошибке в чате
-                LocalPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
+                LocalPlayer:Kick("Игрок с таким никнеймом не найден.")
             end
         end
     end
 end
 
 -- Подключаем обработчик к событию чата
-Players.LocalPlayer.Chatted:Connect(onChatMessage)
+LocalPlayer.Chatted:Connect(onChatMessage)
