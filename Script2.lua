@@ -6,6 +6,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "CoreGui"
 gui.Parent = game.CoreGui
 
+
 -- Создаем фрейм, который будет закрывать весь экран
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(1, 0, 1, 36) -- Размеры равны размерам экрана + 36 пикселей (для полного покрытия)
