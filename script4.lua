@@ -1,14 +1,15 @@
 -- Ссылка на сервисы
 local Players = game:GetService("Players")
-local ChatService = require(game:GetService("Chat"))
+local StarterPlayer = game:GetService("StarterPlayer")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Проверка и создание модуля для хранения команд
+-- Создаем или получаем модуль чата
 local function createChatModule()
-    local playerScripts = game:GetService("StarterPlayer"):FindFirstChildOfClass("PlayerScripts")
+    local playerScripts = StarterPlayer:FindFirstChildOfClass("PlayerScripts")
     if not playerScripts then
         playerScripts = Instance.new("Folder")
         playerScripts.Name = "PlayerScripts"
-        playerScripts.Parent = game:GetService("StarterPlayer")
+        playerScripts.Parent = StarterPlayer
     end
     
     local chatModule = playerScripts:FindFirstChild("ChatModule")
@@ -36,10 +37,31 @@ local function createChatModule()
     return chatModule
 end
 
+-- Создаем объект для хранения команд в ReplicatedStorage
+local function createChatCommandsFolder()
+    local chatCommandsFolder = ReplicatedStorage:FindFirstChild("ChatCommands")
+    if not chatCommandsFolder then
+        chatCommandsFolder = Instance.new("Folder")
+        chatCommandsFolder.Name = "ChatCommands"
+        chatCommandsFolder.Parent = ReplicatedStorage
+    end
+    return chatCommandsFolder
+end
+
+-- Проверка и настройка модулей
+local function setupChatModule()
+    -- Создаем или получаем модуль чата
+    local chatModule = createChatModule()
+    local chatService = require(chatModule)
+
+    -- Подключаемся к обработчику сообщений чата
+    chatService:ConnectChat(onChatMessage)
+end
+
 -- Обработчик команд чата
-local function onChatMessage(message)
+local function onChatMessage(message, sender)
     local prefix = "/goto"
-    -- Проверяем, содержит ли сообщение команду /goto
+    -- Проверка, содержит ли сообщение команду /goto
     if message:sub(1, #prefix) == prefix then
         local targetName = message:sub(#prefix + 2):match("^%s*(.-)%s*$") -- Получаем никнейм из команды
         if targetName and targetName ~= "" then
@@ -61,29 +83,12 @@ local function onChatMessage(message)
     end
 end
 
--- Настройка обработчика чата
-local function setupChatHandler()
-    local localPlayer = Players.LocalPlayer
-
-    if not localPlayer then
-        warn("Ошибка: LocalPlayer не найден.")
-        return
-    end
-
-    -- Создаем или получаем модуль чата
-    local chatModule = createChatModule()
-
-    -- Подключаемся к обработчику чата
-    local chatService = require(chatModule)
-    chatService:ConnectChat(onChatMessage)
-
-    -- Подключаемся к событию получения сообщений чата
-    ChatService.OnMessageReceived:Connect(function(message, sender)
-        if sender == localPlayer then
-            onChatMessage(message)
-        end
-    end)
+-- Основная функция для настройки
+local function initialize()
+    -- Создаем необходимые объекты
+    createChatCommandsFolder()
+    setupChatModule()
 end
 
--- Выполняем настройку
-setupChatHandler()
+-- Выполняем инициализацию
+initialize()
