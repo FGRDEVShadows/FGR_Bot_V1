@@ -1,11 +1,11 @@
 _G.Config = {
-    BotOwnerName = "crater_robloxq",
-    BotOwnerId = 0,
+    BotOwnerName = game.Players.LocalPlayer.Name,
+    BotOwnerId = 0, -- Замените на реальный ID, если необходимо
     FPSCap = 20,
-    Prefix = "/",
+    Prefix = "f",
     WhiteListPermLevel = 2,
-    WhiteList = {"Example1","Example2","Example3"},
-    HideCoords = Vector3.new(math.random(1,1000),100000,math.random(1,1000)),
+    WhiteList = {"Пример1", "Пример2", "Пример3"},
+    HideCoords = Vector3.new(math.random(1, 1000), 100000, math.random(1, 1000)),
     AntiAFK = true,
     AntiFling = true,
     NoRender = true,
@@ -13,59 +13,12 @@ _G.Config = {
     GiveToolsMethod = 1,
 }
 
+
 loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/Script2.lua"))()
 
 wait(1)
 
--- Получаем игрока
-local player = game.Players.LocalPlayer
 
--- Функция для отправки сообщения и создания ивентов при необходимости
-local function SendMessage(message)
-    -- Проверяем, что игрок существует и что сообщение не пустое
-    if player and message then
-        -- Создаем объект DefaultChatSystemChatEvents, если он не существует
-        local ChatEvents = game.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if not ChatEvents then
-            ChatEvents = Instance.new("Folder")
-            ChatEvents.Name = "DefaultChatSystemChatEvents"
-            ChatEvents.Parent = game.ReplicatedStorage
-            
-            -- Создаем событие SayMessageRequest
-            local SayMessageRequest = Instance.new("RemoteEvent")
-            SayMessageRequest.Name = "SayMessageRequest"
-            SayMessageRequest.Parent = ChatEvents
-        else
-            -- Проверяем существование события SayMessageRequest в объекте ChatEvents
-            local SayMessageRequest = ChatEvents:FindFirstChild("SayMessageRequest")
-            if not SayMessageRequest then
-                SayMessageRequest = Instance.new("RemoteEvent")
-                SayMessageRequest.Name = "SayMessageRequest"
-                SayMessageRequest.Parent = ChatEvents
-            end
-        end
-
-        -- Отправляем сообщение в чат от имени игрока
-        local SayMessageRequest = ChatEvents:FindFirstChild("SayMessageRequest")
-        if SayMessageRequest then
-            local success, err = pcall(function()
-                SayMessageRequest:FireServer(message, "All")
-            end)
-            if success then
-                print("Сообщение отправлено успешно: " .. message)
-            else
-                print("Ошибка при отправке сообщения:", err)
-            end
-        else
-            print("Ошибка: событие SayMessageRequest не найдено.")
-        end
-    else
-        print("Ошибка: игрок не найден или сообщение пустое.")
-    end
-end
-
--- Пример использования функции
-SendMessage("{FGR_Bot_V1 Loaded!}")
 
 wait(1)
 
