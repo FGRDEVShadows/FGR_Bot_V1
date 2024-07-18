@@ -48,7 +48,51 @@ local function createChatCommandsFolder()
     return chatCommandsFolder
 end
 
--- Проверка и настройка модулей
+-- Обработчик команд чата
+local function onChatMessage(message, sender)
+    local commandPrefix = "/"
+    -- Проверяем, начинается ли сообщение с командного префикса
+    if message:sub(1, #commandPrefix) == commandPrefix then
+        local command, args = message:match("^/([%w_]+)%s*(.*)")
+        if command then
+            command = command:lower()
+            -- Обрабатываем команды
+            if command == "goto" then
+                local targetName = args:match("^%s*(.-)%s*$")
+                if targetName and targetName ~= "" then
+                    local targetPlayer = Players:FindFirstChild(targetName)
+                    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local localPlayer = Players.LocalPlayer
+                        if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                        else
+                            warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
+                        end
+                    else
+                        localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
+                    end
+                end
+            elseif command == "size" then
+                local size = tonumber(args)
+                if size and size > 0 then
+                    local localPlayer = Players.LocalPlayer
+                    if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+                        localPlayer.Character.Humanoid.BodySize = size
+                    else
+                        warn("Ошибка: Humanoid не найден в персонаже локального игрока.")
+                    end
+                else
+                    localPlayer:SendNotification({Title = "Ошибка", Text = "Некорректный размер."})
+                end
+            else
+                -- Неизвестная команда
+                localPlayer:SendNotification({Title = "Ошибка", Text = "Неизвестная команда."})
+            end
+        end
+    end
+end
+
+-- Настройка обработчика команд чата
 local function setupChatModule()
     -- Создаем или получаем модуль чата
     local chatModule = createChatModule()
@@ -56,31 +100,6 @@ local function setupChatModule()
 
     -- Подключаемся к обработчику сообщений чата
     chatService:ConnectChat(onChatMessage)
-end
-
--- Обработчик команд чата
-local function onChatMessage(message, sender)
-    local prefix = "/goto"
-    -- Проверка, содержит ли сообщение команду /goto
-    if message:sub(1, #prefix) == prefix then
-        local targetName = message:sub(#prefix + 2):match("^%s*(.-)%s*$") -- Получаем никнейм из команды
-        if targetName and targetName ~= "" then
-            -- Найти целевого игрока по никнейму
-            local targetPlayer = Players:FindFirstChild(targetName)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local localPlayer = Players.LocalPlayer
-                if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Телепортировать локального игрока к целевому игроку
-                    localPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
-                else
-                    warn("Ошибка: HumanoidRootPart не найден в персонаже локального игрока.")
-                end
-            else
-                -- Показать сообщение об ошибке в чате
-                localPlayer:SendNotification({Title = "Ошибка", Text = "Игрок с таким никнеймом не найден."})
-            end
-        end
-    end
 end
 
 -- Основная функция для настройки
