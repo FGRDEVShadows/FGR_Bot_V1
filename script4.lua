@@ -5,9 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Список доступных команд
 local commands = {
-    ["/goto"] = "Телепортирует к игроку с указанным ником.",
-    ["/size"] = "Изменяет размер игрока. Пример: /size 5",
-    ["/help"] = "Показывает список доступных команд."
+    ["f.goto"] = "Телепортирует к игроку с указанным ником.",
+    ["f.size"] = "Изменяет размер игрока. Пример: f.size 5",
+    ["f.help"] = "Показывает список доступных команд."
 }
 
 -- Создаем или получаем модуль чата
@@ -63,15 +63,15 @@ end
 
 -- Обработчик команд чата
 local function onChatMessage(message, sender)
-    local commandPrefix = "/"
+    local commandPrefix = "f."
     -- Проверяем, начинается ли сообщение с командного префикса
     if message:sub(1, #commandPrefix) == commandPrefix then
-        local command, args = message:match("^/([%w_]+)%s*(.*)")
+        local command, args = message:match("^f%.([%w_]+)%s*(.*)")
         if command then
-            command = "/" .. command:lower() -- Префикс "/" для команд
+            command = "f." .. command:lower() -- Префикс "f." для команд
 
             -- Обрабатываем команды
-            if command == "/goto" then
+            if command == "f.goto" then
                 local targetName = args:match("^%s*(.-)%s*$")
                 if targetName and targetName ~= "" then
                     local targetPlayer = Players:FindFirstChild(targetName)
@@ -86,7 +86,7 @@ local function onChatMessage(message, sender)
                         sendChatMessage(sender, "Игрок с таким никнеймом не найден.")
                     end
                 end
-            elseif command == "/size" then
+            elseif command == "f.size" then
                 local size = tonumber(args)
                 if size and size > 0 then
                     local localPlayer = Players.LocalPlayer
@@ -99,7 +99,7 @@ local function onChatMessage(message, sender)
                 else
                     sendChatMessage(sender, "Некорректный размер.")
                 end
-            elseif command == "/help" then
+            elseif command == "f.help" then
                 local helpMessage = "Доступные команды:\n"
                 for cmd, desc in pairs(commands) do
                     helpMessage = helpMessage .. cmd .. " - " .. desc .. "\n"
