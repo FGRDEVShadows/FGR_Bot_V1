@@ -13,7 +13,7 @@ _G.Config = {
     GiveToolsMethod = 1,
 }
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/Script2.lua"))()
+
 
 wait(1)
 
