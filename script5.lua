@@ -48,7 +48,7 @@ end
 -- Функция для периодической отправки сообщения
 local function StartMessageLoop()
     while true do
-        SendMessage("{FGR_Bot_V1}") -- Сообщение
+        SendMessage("{Info:script creator:crater_robloxq The script is still in beta testing}") -- Сообщение
         wait(120) -- Ждем 120 секунд (2 минуты) перед отправкой следующего сообщения
     end
 end
