@@ -48,7 +48,9 @@ end
 -- Функция для периодической отправки сообщения
 local function StartMessageLoop()
     while true do
-        SendMessage("{Info:script creator:crater_robloxq. The script is still in beta testing}") -- Сообщение
+        SendMessage("{Info:script creator:crater_robloxq.}") -- Сообщение
+        wait(1)
+         SendMessage("{Info:The script is still in beta testing.}")
         wait(120) -- Ждем 120 секунд (2 минуты) перед отправкой следующего сообщения
     end
 end
