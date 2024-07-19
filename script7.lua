@@ -11,18 +11,6 @@ local speed = 50
 local bodyVelocity
 local bodyGyro
 local direction = Vector3.zero
-local humanoid
-
--- Функция для установки позы "T"
-local function setPoseT()
-    local character = player.Character
-    if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    
-    -- Устанавливаем позу "T"
-    humanoid:LoadAnimation(script:WaitForChild("PoseTAnimation")):Play()
-end
 
 -- Функция для обновления скорости и направления полета
 local function updateFlying()
@@ -36,7 +24,7 @@ local function updateFlying()
         bodyVelocity = Instance.new("BodyVelocity", humanoidRootPart)
         bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
     end
-    
+
     -- Создаем BodyGyro для стабилизации
     if not bodyGyro then
         bodyGyro = Instance.new("BodyGyro", humanoidRootPart)
@@ -53,7 +41,6 @@ end
 
 local function startFlying()
     flying = true
-    setPoseT()
     updateFlying()
 end
 
