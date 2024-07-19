@@ -1,13 +1,3 @@
-_G.Config = {
-    FPSCap = 20,
-    HideCoords = Vector3.new(math.random(1, 1000), 100000, math.random(1, 1000)),
-    AntiAFK = true,
-    AntiFling = true,
-    NoRender = true,
-    IsRagdollGame = true,
-    GiveToolsMethod = 1,
-}
-
 wait(1)
 
 -- script 1
