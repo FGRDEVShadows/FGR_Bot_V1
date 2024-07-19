@@ -93,6 +93,7 @@ local function trackPlayerCamera(playerNamePart)
         local function updateCamera()
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
+                -- Перемещаем камеру к целевой позиции с небольшим смещением
                 Workspace.CurrentCamera.CFrame = CFrame.new(targetPosition + Vector3.new(0, 5, -10), targetPosition)
             end
         end
@@ -188,7 +189,7 @@ local function displayHelp()
     "f.follow [playerName] - Makes you follow the specified player.\n" ..
     "f.unfollow - Stops following the player.\n" ..
     "f.reset - Resets your health to 0.\n" ..
-    "f.track [playerName] - Moves the camera to the specified player and allows manual camera movement.\n" ..
+    "f.track [playerName] - Moves the camera to the specified player and follows them.\n" ..
     "f.untrack - Moves the camera back to its original position.\n" ..
     "f.fling [playerName] - Teleports you to the specified player and flings them.\n" ..
     "f.unfling [playerName] - Stops flinging the specified player.\n" ..
