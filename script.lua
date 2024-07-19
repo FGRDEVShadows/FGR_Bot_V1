@@ -40,6 +40,6 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot
 
 wait(2)
 
+--script 6
+
 loadstring(game:HttpGet(""))()
-
-
