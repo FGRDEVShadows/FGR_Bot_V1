@@ -24,7 +24,12 @@ wait(1)
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/script6.lua"))()
 
-wait(1)
+wait(2)
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/script7.lua"))()
+
+wait(2)
 
 loadstring(game:HttpGet(""))()
+
 
