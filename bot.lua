@@ -4,9 +4,8 @@ local RunService = game:GetService("RunService")
 
 -- Переменные для хранения состояния
 local savedPosition = nil
-local trackingPlayer
-local originalCameraPosition = nil -- Для хранения исходного положения камеры
-local cameraFollowConnection = nil -- Для отслеживания соединения с RenderStepped
+local originalCameraPosition = nil
+local cameraFollowConnection = nil
 
 -- Функция поиска игрока по части имени
 local function findPlayerByName(namePart)
@@ -69,7 +68,6 @@ end
 
 -- Функция прекращения следования
 local function unfollowPlayer()
-    trackingPlayer = nil
     SendChatMessage("Stopped following.", Enum.ChatColor.Green)
 end
 
@@ -87,7 +85,9 @@ local function trackPlayerCamera(playerNamePart)
     local targetPlayer = findPlayerByName(playerNamePart)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         -- Сохраняем исходное положение камеры
-        originalCameraPosition = Workspace.CurrentCamera.CFrame
+        if not originalCameraPosition then
+            originalCameraPosition = Workspace.CurrentCamera.CFrame
+        end
         
         -- Функция для обновления позиции камеры
         local function updateCamera()
@@ -122,8 +122,7 @@ end
 local function flingPlayer(playerNamePart)
     local targetPlayer = findPlayerByName(playerNamePart)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetCharacter = targetPlayer.Character
-        local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+        local targetRootPart = targetPlayer.Character.HumanoidRootPart
         
         if targetRootPart then
             -- Телепортируем локального игрока к указанному игроку
@@ -162,24 +161,20 @@ end
 local function unflingPlayer(playerNamePart)
     local targetPlayer = findPlayerByName(playerNamePart)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-        if humanoidRootPart then
-            -- Удаляем все BodyGyro и BodyVelocity объекты, связанные с игроком
-            for _, bodyGyro in ipairs(targetPlayer.Character:GetChildren()) do
-                if bodyGyro:IsA("BodyGyro") then
-                    bodyGyro:Destroy()
-                end
+        -- Удаляем все BodyGyro и BodyVelocity объекты, связанные с игроком
+        for _, bodyGyro in ipairs(targetPlayer.Character:GetChildren()) do
+            if bodyGyro:IsA("BodyGyro") then
+                bodyGyro:Destroy()
             end
-
-            for _, bodyVelocity in ipairs(targetPlayer.Character:GetChildren()) do
-                if bodyVelocity:IsA("BodyVelocity") then
-                    bodyVelocity:Destroy()
-                end
-            end
-            
-            SendChatMessage("Unflinged " .. targetPlayer.Name, Enum.ChatColor.Green)
         end
+
+        for _, bodyVelocity in ipairs(targetPlayer.Character:GetChildren()) do
+            if bodyVelocity:IsA("BodyVelocity") then
+                bodyVelocity:Destroy()
+            end
+        end
+        
+        SendChatMessage("Unflinged " .. targetPlayer.Name, Enum.ChatColor.Green)
     else
         SendChatMessage("Player not found or character not available.", Enum.ChatColor.Red)
     end
