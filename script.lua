@@ -26,7 +26,7 @@ wait(2)
 
 -- script 5
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/FGRDEVShadows/FGR_Bot_V1/main/script7.lua"))()
+loadstring(game:HttpGet(""))()
 
 wait(2)
 
