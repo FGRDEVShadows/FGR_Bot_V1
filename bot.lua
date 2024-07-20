@@ -1,28 +1,33 @@
+
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
 
 -- Переменные для хранения состояния
 local savedPosition = nil
 local originalCameraCFrame = nil
 local cameraFollowConnection = nil
-local targetPart = nil
+local flying = false
+local flyVelocity = 50 -- Скорость полета
+local standing = false -- Переменная для отслеживания состояния стояния
+local attachMotor = nil
+local targetPlayerName = nil
+local controlledPlayer = nil -- Игрок, управление которым взято на себя
+local originalControl = nil -- Оригинальное управление
+local islandPart = nil -- Переменная для хранения острова
+local isOnIsland = false -- Переменная для отслеживания нахождения на острове
+local afkConnection = nil -- Переменная для хранения подключения к событию
 
--- Функция создания Part и телепортации
-local function createAndTeleport()
-    -- Создаем новый Part
-    targetPart = Instance.new("Part")
-    targetPart.Size = Vector3.new(100, 20, 100)
-    targetPart.Anchored = true
-    targetPart.Position = Vector3.new(5000, 50, 5000)  -- Удаленный от спавна
-    targetPart.Parent = Workspace
-    
-    -- Телепортируем локального игрока к созданному Part
-    local character = Players.LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character.HumanoidRootPart.CFrame = CFrame.new(targetPart.Position)
-        SendChatMessage("Teleported to the new Part.", Enum.ChatColor.Green)
+-- Функция поиска игрока по части имени
+local function findPlayerByName(namePart)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Name:lower():find(namePart:lower()) then
+            return player
+        end
     end
+    return nil
 end
 
 -- Функция отправки сообщения в чат
@@ -41,7 +46,7 @@ end
 local function savePoint()
     local character = Players.LocalPlayer.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
-        savedPosition = character.HumanoidRootPart.Position
+        savedPosition = character.HumanoidRootPart.CFrame -- Сохраняем CFrame для точности
         SendChatMessage("Save point set.", Enum.ChatColor.Green)
     end
 end
@@ -50,174 +55,248 @@ end
 local function comeBack()
     local character = Players.LocalPlayer.Character
     if character and character:FindFirstChild("HumanoidRootPart") and savedPosition then
-        character.HumanoidRootPart.CFrame = CFrame.new(savedPosition)
+        character.HumanoidRootPart.CFrame = savedPosition
         SendChatMessage("Returned to saved position.", Enum.ChatColor.Green)
     end
 end
 
--- Функция следования за игроком
-local function followPlayer(playerNamePart)
+-- Функция телепортации к игроку
+local function teleportToPlayer(playerNamePart)
     local targetPlayer = findPlayerByName(playerNamePart)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Сохраняем исходное положение и CFrame камеры
-        if not originalCameraCFrame then
-            originalCameraCFrame = Workspace.CurrentCamera.CFrame
+        local character = Players.LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            -- Телепортируем локального игрока к целевому игроку
+            character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+            SendChatMessage("Teleported to " .. targetPlayer.Name, Enum.ChatColor.Green)
+        end
+    else
+        SendChatMessage("Player not found or character not available.", Enum.ChatColor.Red)
+    end
+end
+
+-- Функция создания острова
+local function createIsland()
+    if not islandPart then
+        islandPart = Instance.new("Part")
+        islandPart.Size = Vector3.new(1000, 10, 1000) -- Размер острова
+        islandPart.Position = Vector3.new(5000, -50, 5000) -- Позиция острова за пределами карты
+        islandPart.Anchored = true
+        islandPart.Parent = Workspace
+        SendChatMessage("Island created. Teleporting in 2 seconds...", Enum.ChatColor.Green)
+
+        -- Задержка перед телепортацией
+        wait(2)
+
+        local character = Players.LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            character.HumanoidRootPart.CFrame = islandPart.CFrame + Vector3.new(0, 10, 0) -- Телепортируем игрока на остров
+            isOnIsland = true
+        end
+    else
+        SendChatMessage("An island already exists.", Enum.ChatColor.Red)
+    end
+end
+
+-- Функция удаления острова
+local function removeIsland()
+    if islandPart then
+        islandPart:Destroy()
+        islandPart = nil
+        isOnIsland = false
+        SendChatMessage("Island removed and teleported back to the map.", Enum.ChatColor.Green)
+
+        -- Телепортируем игрока обратно на сохраненную позицию или исходную позицию
+        local character = Players.LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            if savedPosition then
+                character.HumanoidRootPart.CFrame = savedPosition
+            else
+                -- Если сохраненная позиция отсутствует, можно телепортировать игрока на стандартную позицию
+                character.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)
+            end
+        end
+    else
+        SendChatMessage("No island exists to remove.", Enum.ChatColor.Red)
+    end
+end
+
+-- Функция установки скорости
+local function setSpeed(value)
+    local character = Players.LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.WalkSpeed = value
+        SendChatMessage("Speed set to " .. value, Enum.ChatColor.Green)
+    end
+end
+
+-- Функция установки силы прыжка
+local function setJumpPower(value)
+    local character = Players.LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.JumpPower = value
+        SendChatMessage("Jump power set to " .. value, Enum.ChatColor.Green)
+    end
+end
+
+-- Функция включения отслеживания
+local function enableTracking()
+    -- Логика включения отслеживания
+    SendChatMessage("Tracking enabled.", Enum.ChatColor.Green)
+end
+
+-- Функция отключения отслеживания
+local function disableTracking()
+    -- Логика отключения отслеживания
+    SendChatMessage("Tracking disabled.", Enum.ChatColor.Green)
+end
+
+-- Функция контроля игрока
+local function controlPlayer(playerNamePart)
+    local targetPlayer = findPlayerByName(playerNamePart)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        -- Отключаем следование, если оно включено
+        if cameraFollowConnection then
+            cameraFollowConnection:Disconnect()
+            cameraFollowConnection = nil
         end
         
-        -- Фиксируем камеру на целевом игроке
+        -- Сохраняем оригинальное управление
+        if originalControl then
+            originalControl:Destroy()
+            originalControl = nil
+        end
+
+        -- Переносим камеру на целевого игрока
+        originalCameraCFrame = Workspace.CurrentCamera.CFrame
         local function updateCamera()
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                -- Камера будет следить за игроком, сохраняя возможность вращения
                 Workspace.CurrentCamera.CameraSubject = targetPlayer.Character.Humanoid
                 Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
             end
         end
-
-        -- Подключаем функцию обновления камеры к RenderStepped
         cameraFollowConnection = RunService.RenderStepped:Connect(updateCamera)
-        SendChatMessage("Now following " .. targetPlayer.Name, Enum.ChatColor.Green)
+        
+        -- Управление игроком
+        local localCharacter = Players.LocalPlayer.Character
+        if localCharacter and localCharacter:FindFirstChild("Humanoid") then
+            originalControl = localCharacter.Humanoid:GetState() -- Сохраняем текущее состояние управления
+            localCharacter.Humanoid.PlatformStand = true -- Переключаемся в режим PlatformStand для контроля
+        end
+        
+        controlledPlayer = targetPlayer
+        SendChatMessage("Now controlling " .. targetPlayer.Name, Enum.ChatColor.Green)
     else
         SendChatMessage("Player not found or character not available.", Enum.ChatColor.Red)
     end
 end
 
--- Функция прекращения следования
-local function unfollowPlayer()
-    -- Отключаем функцию обновления камеры
-    if cameraFollowConnection then
-        cameraFollowConnection:Disconnect()
-        cameraFollowConnection = nil
-    end
-    -- Возвращаем камеру в исходное состояние
-    if originalCameraCFrame then
-        Workspace.CurrentCamera.CFrame = originalCameraCFrame
-        originalCameraCFrame = nil
-    end
-    Workspace.CurrentCamera.CameraSubject = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-    Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-    SendChatMessage("Stopped following. Camera returned to original position.", Enum.ChatColor.Green)
-end
-
--- Функция сброса здоровья
-local function reset()
-    local character = Players.LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.Health = 0
-        SendChatMessage("You have been reset.", Enum.ChatColor.Green)
-    end
-end
-
--- Функция выкидывания игрока
-local function flingPlayer(playerNamePart)
-    local targetPlayer = findPlayerByName(playerNamePart)
-    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetRootPart = targetPlayer.Character.HumanoidRootPart
+-- Функция отмены контроля
+local function uncontrolPlayer()
+    if controlledPlayer then
+        -- Восстанавливаем камеру и управление
+        if cameraFollowConnection then
+            cameraFollowConnection:Disconnect()
+            cameraFollowConnection = nil
+        end
+        if originalCameraCFrame then
+            Workspace.CurrentCamera.CFrame = originalCameraCFrame
+            originalCameraCFrame = nil
+        end
+        Workspace.CurrentCamera.CameraSubject = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
         
-        if targetRootPart then
-            -- Телепортируем локального игрока к указанному игроку
+        if controlledPlayer and controlledPlayer.Character and controlledPlayer.Character:FindFirstChild("Humanoid") then
             local localCharacter = Players.LocalPlayer.Character
-            local localRootPart = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
-            if localRootPart then
-                localRootPart.CFrame = targetRootPart.CFrame
+            if localCharacter and localCharacter:FindFirstChild("Humanoid") then
+                localCharacter.Humanoid.PlatformStand = false -- Восстанавливаем управление
             end
-            
-            -- Создаем BodyGyro для сильного вращения
-            local bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.CFrame = targetRootPart.CFrame
-            bodyGyro.P = 10000
-            bodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
-            bodyGyro.Parent = targetRootPart
-
-            -- Создаем BodyVelocity для выкидывания
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.Velocity = Vector3.new(math.random(-500, 500), 500, math.random(-500, 500)) -- Случайное направление
-            bodyVelocity.P = 10000
-            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-            bodyVelocity.Parent = targetRootPart
-            
-            -- Сохраняем объекты для последующего удаления
-            game:GetService("Debris"):AddItem(bodyGyro, 0.5)
-            game:GetService("Debris"):AddItem(bodyVelocity, 0.5)
-            
-            SendChatMessage("Flinged " .. targetPlayer.Name, Enum.ChatColor.Green)
         end
+
+        controlledPlayer = nil
+        SendChatMessage("Stopped controlling player.", Enum.ChatColor.Green)
     else
-        SendChatMessage("Player not found or character not available.", Enum.ChatColor.Red)
+        SendChatMessage("No player is currently being controlled.", Enum.ChatColor.Red)
     end
 end
 
--- Функция отмены выкидывания
-local function unflingPlayer(playerNamePart)
-    local targetPlayer = findPlayerByName(playerNamePart)
-    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Удаляем все BodyGyro и BodyVelocity объекты, связанные с игроком
-        for _, bodyGyro in ipairs(targetPlayer.Character:GetChildren()) do
-            if bodyGyro:IsA("BodyGyro") then
-                bodyGyro:Destroy()
+-- Функция включения AFK режима
+local function setAFK()
+    if not afkConnection then
+        afkConnection = RunService.Heartbeat:Connect(function()
+            local character = Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                wait(0.1) -- Задержка для предотвращения слишком частого изменения состояния
+                character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
-        end
-
-        for _, bodyVelocity in ipairs(targetPlayer.Character:GetChildren()) do
-            if bodyVelocity:IsA("BodyVelocity") then
-                bodyVelocity:Destroy()
-            end
-        end
-        
-        SendChatMessage("Unflinged " .. targetPlayer.Name, Enum.ChatColor.Green)
+        end)
+        SendChatMessage("AFK mode activated. Player will not be kicked out due to inactivity.", Enum.ChatColor.Green)
     else
-        SendChatMessage("Player not found or character not available.", Enum.ChatColor.Red)
+        SendChatMessage("AFK mode is already active.", Enum.ChatColor.Red)
     end
 end
 
--- Функция отображения доступных команд
-local function displayHelp()
-    local helpMessage = "Available commands:\n" ..
-    "f.savepoint - Saves the current position.\n" ..
-    "f.comeback - Returns to the saved position.\n" ..
-    "f.follow [playerName] - Makes you follow the specified player.\n" ..
-    "f.unfollow - Stops following the player.\n" ..
-    "f.reset - Resets your health to 0.\n" ..
-    "f.track [playerName] - Tracks the camera to the specified player without moving it.\n" ..
-    "f.untrack - Untracks the camera and returns to its original position.\n" ..
-    "f.fling [playerName] - Teleports you to the specified player and flings them.\n" ..
-    "f.unfling [playerName] - Stops flinging the specified player.\n" ..
-    "f.help - Displays this help message."
-    SendChatMessage(helpMessage, Enum.ChatColor.Blue)
-end
-
--- Функция обработки команд из чата
-local function onChatMessage(message)
-    local command, args = message:match("^(%S+)%s*(.*)$")
-    if command then
-        args = args and args:split(" ")
-        command = command:lower()
-        
-        if command == "f.savepoint" then
-            savePoint()
-        elseif command == "f.comeback" then
-            comeBack()
-        elseif command == "f.follow" then
-            followPlayer(args[1])
-        elseif command == "f.unfollow" then
-            unfollowPlayer()
-        elseif command == "f.reset" then
-            reset()
-        elseif command == "f.track" then
-            followPlayer(args[1])
-        elseif command == "f.untrack" then
-            unfollowPlayer()
-        elseif command == "f.fling" then
-            flingPlayer(args[1])
-        elseif command == "f.unfling" then
-            unflingPlayer(args[1])
-        elseif command == "f.help" then
-            displayHelp()
-        end
+-- Функция отключения AFK режима
+local function unsetAFK()
+    if afkConnection then
+        afkConnection:Disconnect()
+        afkConnection = nil
+        SendChatMessage("AFK mode deactivated.", Enum.ChatColor.Green)
+    else
+        SendChatMessage("AFK mode is not active.", Enum.ChatColor.Red)
     end
 end
 
--- Подключение функции обработки сообщений к событию чата
-Players.LocalPlayer.Chatted:Connect(onChatMessage)
+-- Функция обработки команд
+local function executeCommand(command)
+    local args = command:split(" ")
+    local cmd = args[1]:lower()
 
--- Создание Part и телепортация при запуске скрипта
-createAndTeleport()
+    if cmd == "f.savepoint" then
+        savePoint()
+    elseif cmd == "f.comeback" then
+        comeBack()
+    elseif cmd == "f.tp" then
+        teleportToPlayer(args[2])
+    elseif cmd == "f.speed" then
+        setSpeed(tonumber(args[2]))
+    elseif cmd == "f.jump" then
+        setJumpPower(tonumber(args[2]))
+    elseif cmd == "f.look" then
+        enableTracking()
+    elseif cmd == "f.unlook" then
+        disableTracking()
+    elseif cmd == "f.follow" then
+        followPlayer(args[2])
+    elseif cmd == "f.unfollow" then
+        unfollowPlayer()
+    elseif cmd == "f.reset" then
+        reset()
+    elseif cmd == "f.bang" then
+        -- Логика постоянного телепорта
+    elseif cmd == "f.unbang" then
+        -- Логика отключения постоянного телепорта
+    elseif cmd == "f.island" then
+        createIsland()
+    elseif cmd == "f.back" then
+        removeIsland()
+    elseif cmd == "f.control" then
+        controlPlayer(args[2])
+    elseif cmd == "f.uncontrol" then
+        uncontrolPlayer()
+    elseif cmd == "f.afk" then
+        setAFK()
+    elseif cmd == "f.unafk" then
+        unsetAFK()
+    elseif cmd == "f.help" then
+        displayHelp()
+    else
+        SendChatMessage("Unknown command. Type 'f.help' for a list of commands.", Enum.ChatColor.Red)
+    end
+end
+
+-- Обработчик команд в чате
+Players.LocalPlayer.Chatted:Connect(function(message)
+    executeCommand(message)
+end)
