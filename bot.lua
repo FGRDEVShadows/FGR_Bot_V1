@@ -248,6 +248,31 @@ local function unsetAFK()
     end
 end
 
+-- Функция отображения помощи
+local function displayHelp()
+    local helpMessage = "Available Commands:\n" ..
+    "- f.savepoint: Save your current position.\n" ..
+    "- f.comeback: Return to the saved position.\n" ..
+    "- f.tp <playerNamePart>: Teleport to the specified player.\n" ..
+    "- f.speed <value>: Set your walk speed to the specified value.\n" ..
+    "- f.jump <value>: Set your jump power to the specified value.\n" ..
+    "- f.look: Enable player tracking.\n" ..
+    "- f.unlook: Disable player tracking.\n" ..
+    "- f.follow <playerNamePart>: Start following the specified player.\n" ..
+    "- f.unfollow: Stop following the current player.\n" ..
+    "- f.reset: Reset all changes made.\n" ..
+    "- f.bang: (Functionality not implemented)\n" ..
+    "- f.unbang: (Functionality not implemented)\n" ..
+    "- f.island: Create an island and teleport there.\n" ..
+    "- f.back: Remove the island and return to the saved position.\n" ..
+    "- f.control <playerNamePart>: Take control of the specified player.\n" ..
+    "- f.uncontrol: Release control of the current player.\n" ..
+    "- f.afk: Activate AFK mode to prevent being kicked due to inactivity.\n" ..
+    "- f.unafk: Deactivate AFK mode.\n" ..
+    "- f.help: Display this help message."
+    SendChatMessage(helpMessage, Enum.ChatColor.Blue)
+end
+
 -- Функция обработки команд
 local function executeCommand(command)
     local args = command:split(" ")
