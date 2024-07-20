@@ -186,8 +186,16 @@ local function displayHelp()
     "f.reset - Resets your health to 0.\n" ..
     "f.fling [playerName] - Teleports you to the specified player and flings them.\n" ..
     "f.unfling [playerName] - Stops flinging the specified player.\n" ..
+    "f.info - Displays information about the script.\n" ..
     "f.help - Displays this help message."
     SendChatMessage(helpMessage, Enum.ChatColor.Blue)
+end
+
+-- Функция отображения информации о скрипте
+local function displayInfo()
+    SendChatMessage("Created the script crater_robloxq.", Enum.ChatColor.Blue)
+    wait(1)
+    SendChatMessage("This script is still under development.", Enum.ChatColor.Blue)
 end
 
 -- Функция обработки команд из чата
@@ -215,6 +223,8 @@ local function onChatMessage(message)
             unflingPlayer(args[1])
         elseif command == "f.help" then
             displayHelp()
+        elseif command == "f.info" then
+            displayInfo()
         end
     end
 end
